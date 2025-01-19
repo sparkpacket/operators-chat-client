@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script type='text/javascript' src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <style>
+    /* Base styles */
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 13px;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Improved font */
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      background-color: #f1f1f1;
+      color: #333;
+    }
+
+    .header .mode-button {
+      cursor: pointer;
+      background: none;
+      border: 1px solid #333;
+      padding: 5px 10px;
+      font-size: 16px;
+      border-radius: 5px;
+    }
+
+    .members-count,
+    .members-list,
+    .messages {
+      border: 1px solid #e4e4e4;
+      padding: 15px;
+      margin-bottom: 15px;
+      background-color: #f9f9f9; /* Light background for light mode */
+    }
+
+    .messages {
+      flex-shrink: 1;
+      overflow: auto;
+    }
+
+    .message {
+      padding: 5px 0;
+    }
+
+    .message .member {
+      display: inline-block;
+    }
+
+    .member {
+      padding-right: 10px;
+      position: relative;
+    }
+
+    .message-form {
+      display: flex;
+      flex-shrink: 0;
+    }
+
+    .message-form__input {
+      flex-grow: 1;
+      border: 1px solid #dfdfdf;
+      padding: 10px 15px;
+      font-size: 16px;
+    }
+
+    .message-form__button {
+      margin: 10px;
+    }
+
+    /* Style for collapsible container */
+    .collapsible-container {
+      display: flex;
+      flex-direction: column;
+      transition: height 0.3s ease;
+    }
+
+    /* Hidden members list when collapsed */
+    .members-list.collapsed {
+      display: none;
+    }
+
+    .toggle-button {
+      cursor: pointer;
+      color: blue;
+      text-decoration: underline;
+      margin-bottom: 5px;
+    }
+
+    /* Light mode styles */
+    body.light-mode {
+      background-color: #fff;
+      color: #000;
+    }
+
+    /* Dark mode styles */
+    body.dark-mode {
+      background-color: #333;
+      color: #fff;
+    }
+
+    .header.dark-mode {
+      background-color: #444;
+      color: #fff;
+    }
+
+    /* Borders stay consistent */
+    .dark-mode .members-count,
+    .dark-mode .members-list,
+    .dark-mode .messages {
+      border: 1px solid #555;
+    }
+
+    /* Darker background inside boxes in dark mode */
+    .dark-mode .members-count,
+    .dark-mode .members-list,
+    .dark-mode .messages {
+      background-color: #2c2c2c; /* Darker background for inside boxes */
+    }
+
+    .dark-mode .message-form__input,
+    .dark-mode .message-form__button {
+      background-color: #444;
+      border: 1px solid #555;
+      color: #fff;
+    }
+
+    .dark-mode .mode-button {
+      background-color: #444;
+      border: 1px solid #555;
+      color: #fff;
+    }
+
+    /* Invert member names, excluding specific colors */
+    .inverted-member {
+      filter: invert(1) contrast(100%);
+    }
+
+    /* Ensuring dark purple, red, and dark blue are excluded from inversion */
+    .excluded-inversion {
+      color: inherit !important;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>Operator's Chat Client (OCC)</div>
+    <button class="mode-button" onclick="toggleMode()">Toggle Light/Dark Mode</button>
+  </div>
+  
+  <div class="collapsible-container">
+    <div class="toggle-button" onclick="toggleMembersList()">Show/Hide Members</div>
+    <div class="members-count">-</div>
+    <div class="members-list">-</div>
+  </div>
+
+  <div class="messages"></div>
+
+  <form class="message-form" onsubmit="return false;">
+    <input class="message-form__input" placeholder="Type a message.." type="text"/>
+    <input class="message-form__button" value="Send" type="submit"/>
+  </form>
+
+  <script src="./script.js"></script>
+
+  <script>
+    let isDarkMode = false;
+
+    // Function to toggle the visibility of the members list
+    function toggleMembersList() {
+      const membersList = document.querySelector('.members-list');
+      membersList.classList.toggle('collapsed');
+    }
+
+    // Function to toggle between light and dark mode
+    function toggleMode() {
+      isDarkMode = !isDarkMode;
+      const body = document.body;
+      const header = document.querySelector('.header');
+
+      // Toggle dark mode class on body and header
+      if (isDarkMode) {
+        body.classList.remove('light-mode');
+        body.classList.add('dark-mode');
+        header.classList.add('dark-mode');
+      } else {
+        body.classList.remove('dark-mode');
+        body.classList.add('light-mode');
+        header.classList.remove('dark-mode');
+      }
+
+      // Invert member names if they are not red, dark blue, or dark purple
+      invertMemberNames();
+    }
+
+    // Function to invert member names' colors, excluding red, dark blue, and dark purple
+    function invertMemberNames() {
+      const members = document.querySelectorAll('.member');
+      members.forEach(member => {
+        try {
+          const color = window.getComputedStyle(member).color;
+          if (!color) {
+            console.error("No color found for member:", member); // Log if no color is found
+            return; // Skip this member
+          }
+          const hexColor = rgbToHex(color); // Convert RGB color to Hex
+          console.log(`Member: ${member}, Color: ${color}, Hex: ${hexColor}`); // Log color for debugging
+
+          if (!isExcludedColor(hexColor)) {
+            member.classList.add('inverted-member');
+            member.classList.remove('excluded-inversion');
+          } else {
+            member.classList.remove('inverted-member');
+            member.classList.add('excluded-inversion');
+          }
+        } catch (error) {
+          console.error("Error processing member:", member, error); // Log any error that happens inside the loop
+        }
+      });
+    }
+
+    // Function to convert RGB color to Hex
+    function rgbToHex(rgb) {
+      try {
+        const result = rgb.match(/\d+/g); // This matches numbers in the string
+        if (!result) {
+          console.error("Invalid RGB value:", rgb); // Log if RGB value is invalid
+          return '#000000'; // Default fallback to black
+        }
+        const r = parseInt(result[0], 10);
+        const g = parseInt(result[1], 10);
+        const b = parseInt(result[2], 10);
+        
+        // Convert RGB values to Hex format and return it
+        return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1).toUpperCase()}`;
+      } catch (error) {
+        console.error("Error in rgbToHex conversion:", error);
+        return '#000000'; // Default fallback in case of error
+      }
+    }
+
+    // Check if the color is red, dark blue, or dark purple
+    function isExcludedColor(color) {
+      const excludedColors = ['#FF0000', '#00008B', '#4B0082', '#6A0DAD']; // Red, Dark Blue, Dark Purple, Dark Purple Hex
+      return excludedColors.includes(color);
+    }
+  </script>
+</body>
+</html>
+<!--im gonna work on my client cya btw download the "chat" folder-->
